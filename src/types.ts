@@ -1,4 +1,4 @@
-export interface SonoffOutdoorLightCardConfig {
+﻿export interface PoolCardConfig {
   type: string;
   entity: string;
   name?: string;

@@ -1,7 +1,6 @@
-import { test } from 'node:test';
+﻿import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { Window } from 'happy-dom';
-
 const browser = new Window();
 for (const key of [
   'window',
@@ -16,224 +15,234 @@ for (const key of [
   'CustomEvent',
   'Event',
   'Node',
-]) {
+])
   globalThis[key] = key === 'window' ? browser : browser[key];
-}
 await import('../dist/sonoff-pool-card.js');
-const Card = customElements.get('sonoff-outdoor-light-card');
-const config = { type: 'custom:sonoff-outdoor-light-card', entity: 'switch.test_lights' };
+after(() => browser.happyDOM.abort());
 const calls = [];
-function hass(state = 'off') {
+function hass(
+  light = 'off',
+  pump = 'off',
+  service = async (...args) => {
+    calls.push(args);
+  },
+) {
   return {
-    states: { [config.entity]: { state, attributes: { friendly_name: 'Garden' } } },
-    callService: async (...args) => {
-      calls.push(args);
-    },
+    states: { 'switch.light': { state: light, attributes: {} }, 'switch.pump': { state: pump, attributes: {} } },
+    callService: service,
   };
 }
-async function card(state = 'off', overrides = {}) {
-  const el = new Card();
-  el.setConfig({ ...config, ...overrides });
-  el.hass = hass(state);
+async function card(kind = 'light', state = hass()) {
+  const el = document.createElement(`sonoff-pool-${kind}-card`);
+  el.setConfig({ entity: `switch.${kind}` });
+  el.hass = state;
   document.body.append(el);
   await el.updateComplete;
   return el;
 }
-
-test('configuration validation', () => {
-  const el = new Card();
-  assert.throws(() => el.setConfig({}), /Потрібно вказати сутність/);
-  assert.throws(() => el.setConfig({ entity: 123 }), /коректний entity_id/);
-  assert.throws(() => el.setConfig({ ...config, name: 123 }), /Назва має бути рядком/);
-});
-
-test('renders name, state, entity and reacts to hass/config changes', async () => {
-  const el = await card();
-  assert.equal(el.shadowRoot.querySelector('h2').textContent, 'Garden');
-  assert.equal(el.shadowRoot.querySelector('.state-badge'), null);
-  assert.equal(el.shadowRoot.querySelector('.entity-id').textContent, config.entity);
-  el.hass = hass('on');
+const button = (el) => el.shadowRoot.querySelector('button');
+const flush = async (el) => {
+  await Promise.resolve();
   await el.updateComplete;
-  assert.equal(el.shadowRoot.querySelector('.state-badge'), null);
-  el.setConfig({ ...config, name: 'Outdoor lights' });
-  await el.updateComplete;
-  assert.equal(el.shadowRoot.querySelector('h2').textContent, 'Outdoor lights');
-  el.hass = { ...hass(), states: { [config.entity]: { state: 'off', attributes: {} } } };
-  el.setConfig(config);
-  await el.updateComplete;
-  assert.equal(el.shadowRoot.querySelector('h2').textContent, config.entity);
-  el.remove();
-});
-
-test('toggle calls the correct switch service and waits for hass state', async () => {
-  for (const [state, service] of [
-    ['off', 'turn_on'],
-    ['on', 'turn_off'],
-  ]) {
-    const el = await card(state);
-    calls.length = 0;
-    el.shadowRoot.querySelector('button').click();
-    await el.updateComplete;
-    assert.deepEqual(calls, [['switch', service, { entity_id: config.entity }]]);
-    assert.equal(el.shadowRoot.querySelector('.state-badge'), null);
-    el.remove();
-  }
-});
-
-test('missing entity, wrong domain and loading produce readable errors', async () => {
-  const el = await card();
-  el.hass = { ...hass(), states: {} };
-  await el.updateComplete;
-  assert.match(el.shadowRoot.textContent, /Сутність не знайдено: switch.test_lights/);
-  assert.equal(el.shadowRoot.querySelector('button'), null);
-  el.setConfig({ ...config, entity: 'light.garden' });
-  await el.updateComplete;
-  assert.match(el.shadowRoot.textContent, /Ця картка підтримує лише сутності switch/);
-  el.hass = undefined;
-  await el.updateComplete;
-  assert.match(el.shadowRoot.textContent, /Очікування Home Assistant/);
-  el.remove();
-});
-
-test('unavailable and unknown states cannot call services', async () => {
-  for (const state of ['unknown', 'unavailable']) {
-    const el = await card(state);
-    calls.length = 0;
-    assert.equal(el.shadowRoot.querySelector('button').disabled, true);
-    el.shadowRoot.querySelector('button').click();
-    await el.updateComplete;
-    assert.deepEqual(calls, []);
-    assert.equal(el.shadowRoot.querySelector('.state-badge'), null);
-    el.remove();
-  }
-});
-
-test('pending requests block duplicate clicks and failed calls show an error', async () => {
-  const el = await card();
-  let reject;
-  calls.length = 0;
-  el.hass = {
-    ...hass(),
-    callService: (...args) => {
-      calls.push(args);
-      return new Promise((_, fail) => {
-        reject = fail;
-      });
-    },
-  };
-  await el.updateComplete;
-  const button = el.shadowRoot.querySelector('button');
-  button.click();
-  button.click();
-  await el.updateComplete;
-  assert.equal(calls.length, 1);
-  assert.equal(button.getAttribute('aria-disabled'), 'true');
-  reject(new Error('Connection failed'));
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  await el.updateComplete;
-  assert.match(el.shadowRoot.textContent, /Не вдалося перемкнути освітлення: Connection failed/);
-  assert.equal(button.disabled, false);
-  el.remove();
-});
-
-test('picker, stub config and visual editor integrate with Home Assistant', async () => {
-  assert.equal(
-    window.customCards.find((entry) => entry.type === 'sonoff-outdoor-light-card').name,
-    'Освітлення подвір’я Sonoff',
+};
+const pointer = (el, type, x = 100, y = 100) =>
+  button(el).dispatchEvent(
+    new browser.PointerEvent(type, { pointerId: 1, isPrimary: true, button: 0, clientX: x, clientY: y }),
   );
-  assert.equal(Card.getStubConfig(hass()).entity, config.entity);
-  assert.equal(Card.getStubConfig({ states: {} }).entity, '');
-  const editor = await Card.getConfigElement();
-  editor.hass = { ...hass(), states: { ...hass().states, 'light.other': { state: 'on', attributes: {} } } };
-  editor.setConfig(config);
-  document.body.append(editor);
-  await editor.updateComplete;
-  assert.equal(editor.shadowRoot.querySelectorAll('option').length, 2);
-  assert.match(editor.shadowRoot.textContent, /Сутність перемикача \(обов’язково\)/);
-  assert.equal(editor.shadowRoot.querySelector('option').textContent, 'Виберіть перемикач');
-  assert.match(editor.shadowRoot.textContent, /Назва \(необов’язково\)/);
-  let changed;
-  editor.addEventListener('config-changed', (event) => {
-    changed = event.detail.config;
-  });
-  const input = editor.shadowRoot.querySelector('input');
-  input.value = 'Patio';
-  input.dispatchEvent(new Event('input', { bubbles: true }));
-  assert.equal(changed.name, 'Patio');
-  assert.equal(changed.entity, config.entity);
-  input.value = '';
-  input.dispatchEvent(new Event('input', { bubbles: true }));
-  assert.equal('name' in changed, false);
-  editor.remove();
-});
+function geometry(el) {
+  button(el).setPointerCapture = () => {};
+  button(el).hasPointerCapture = () => false;
+  button(el).getBoundingClientRect = () => ({ left: 0, right: 280, top: 0, bottom: 240 });
+}
 
-test('binary keyboard targets do not send redundant commands', async () => {
-  const el = await card();
-  const button = el.shadowRoot.querySelector('button');
-  assert.equal(button.getAttribute('role'), 'switch');
-  assert.equal(button.getAttribute('aria-checked'), 'false');
+test('two picker entries and editors, validation and Ukrainian defaults', async () => {
+  assert.equal(window.customCards.length, 2);
+  assert.equal(customElements.get('sonoff-outdoor-light-card'), undefined);
+  for (const kind of ['light', 'pump']) {
+    const el = await card(kind);
+    const C = el.constructor;
+    assert.throws(() => el.setConfig({}), /сутність/);
+    assert.throws(() => el.setConfig({ entity: 'light.foo' }), /switch/);
+    assert.throws(() => el.setConfig({ entity: 'switch.foo', name: 12 }), /рядком/);
+    assert.equal(C.getStubConfig(hass()).entity, 'switch.light');
+    const ed = C.getConfigElement();
+    ed.hass = hass();
+    ed.setConfig({ entity: `switch.${kind}`, type: `custom:sonoff-pool-${kind}-card` });
+    document.body.append(ed);
+    await ed.updateComplete;
+    let changed;
+    ed.addEventListener('config-changed', (e) => (changed = e.detail.config));
+    const input = ed.shadowRoot.querySelector('input');
+    input.value = 'Назва';
+    input.dispatchEvent(new Event('input'));
+    assert.equal(changed.name, 'Назва');
+    assert.equal(changed.entity, `switch.${kind}`);
+    assert.equal(ed.shadowRoot.querySelectorAll('option').length, 3);
+    ed.remove();
+    el.remove();
+  }
+});
+test('channels are independent; service completion waits for real state and blocks repeats', async () => {
+  const light = await card(),
+    pump = await card('pump');
   calls.length = 0;
-  button.dispatchEvent(new browser.KeyboardEvent('keydown', { key: 'ArrowLeft' }));
-  assert.equal(calls.length, 0);
-  button.dispatchEvent(new browser.KeyboardEvent('keydown', { key: 'ArrowRight' }));
-  await el.updateComplete;
-  assert.equal(calls[0][1], 'turn_on');
-  assert.equal(button.getAttribute('aria-checked'), 'false');
-  assert.equal(el.shadowRoot.querySelector('ha-card').classList.contains('is-on'), false);
-  el.hass = hass('on');
-  await el.updateComplete;
-  assert.equal(button.getAttribute('aria-checked'), 'true');
-  button.dispatchEvent(new browser.KeyboardEvent('keydown', { key: 'Home' }));
-  await el.updateComplete;
+  button(light).click();
+  button(light).click();
+  await flush(light);
+  assert.deepEqual(calls, [['switch', 'turn_on', { entity_id: 'switch.light' }]]);
+  assert.equal(button(light).getAttribute('aria-checked'), 'false');
+  assert.equal(button(light).getAttribute('aria-busy'), 'true');
+  assert.equal(button(pump).getAttribute('aria-busy'), 'false');
+  light.hass = hass('on');
+  await flush(light);
+  assert.equal(button(light).getAttribute('aria-busy'), 'false');
+  button(pump).click();
+  await flush(pump);
+  assert.equal(calls.at(-1)[2].entity_id, 'switch.pump');
+  button(light).click();
+  await flush(light);
   assert.equal(calls.at(-1)[1], 'turn_off');
+  light.remove();
+  pump.remove();
+});
+test('errors, missing entities, unknown and unavailable states', async () => {
+  const el = await card(
+    'light',
+    hass('off', 'off', async () => {
+      throw Error('backend secret');
+    }),
+  );
+  button(el).click();
+  await flush(el);
+  assert.match(el.shadowRoot.textContent, /Не вдалося виконати команду/);
+  assert.equal(button(el).getAttribute('aria-busy'), 'false');
+  for (const state of ['unavailable', 'unknown']) {
+    el.hass = hass(state);
+    await flush(el);
+    assert.equal(button(el).disabled, true);
+    assert.match(el.shadowRoot.textContent, /Немає зв’язку/);
+  }
+  el.hass = { ...hass(), states: {} };
+  await flush(el);
+  assert.match(el.shadowRoot.textContent, /Сутність не знайдено/);
+  assert.equal(button(el).disabled, true);
   el.remove();
 });
-
-test('drag commits one binary command; cancellation commits nothing', async () => {
+test('confirmation timeout and stale service failures cannot affect a reconfigured card', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  let reject;
+  const el = await card(
+    'light',
+    hass('off', 'off', () => new Promise((_, r) => (reject = r))),
+  );
+  button(el).click();
+  await flush(el);
+  t.mock.timers.tick(10001);
+  await flush(el);
+  assert.match(el.shadowRoot.textContent, /Немає підтвердження/);
+  assert.equal(button(el).getAttribute('aria-busy'), 'false');
+  el.setConfig({ entity: 'switch.pump' });
+  reject(Error('old'));
+  await flush(el);
+  assert.equal(el.shadowRoot.querySelector('[role=alert]'), null);
+  el.remove();
+  t.mock.timers.reset();
+});
+test('pointer release, cancellation, scrolling, movement and outside release', async () => {
+  for (const cancel of ['pointercancel', 'lostpointercapture', 'scroll', 'move', 'outside', 'valid']) {
+    const el = await card();
+    geometry(el);
+    calls.length = 0;
+    pointer(el, 'pointerdown');
+    assert.equal(el.pressed, true);
+    if (cancel === 'scroll') window.dispatchEvent(new Event('scroll'));
+    else if (cancel === 'move') pointer(el, 'pointermove', 130);
+    else if (cancel === 'pointercancel' || cancel === 'lostpointercapture') pointer(el, cancel);
+    pointer(el, 'pointerup', cancel === 'outside' ? 300 : 100);
+    button(el).dispatchEvent(new browser.MouseEvent('click', { detail: 1 }));
+    await flush(el);
+    assert.equal(calls.length, cancel === 'valid' ? 1 : 0, cancel);
+    assert.equal(el.pressed, false);
+    el.remove();
+  }
+});
+test('Enter and Space, autorepeat and lost focus', async () => {
+  for (const key of ['Enter', ' ']) {
+    const el = await card();
+    calls.length = 0;
+    button(el).dispatchEvent(new browser.KeyboardEvent('keydown', { key }));
+    assert.equal(el.pressed, true);
+    button(el).dispatchEvent(new browser.KeyboardEvent('keydown', { key, repeat: true }));
+    assert.equal(calls.length, 0);
+    button(el).dispatchEvent(new browser.KeyboardEvent('keyup', { key }));
+    await flush(el);
+    assert.equal(calls.length, 1);
+    el.remove();
+  }
   const el = await card();
-  const button = el.shadowRoot.querySelector('button');
-  button.setPointerCapture = () => {};
-  button.getBoundingClientRect = () => ({ left: 0, width: 300 });
-  const pointer = (type, x) =>
-    button.dispatchEvent(new browser.PointerEvent(type, { clientX: x, pointerId: 1, isPrimary: true, button: 0 }));
   calls.length = 0;
-  pointer('pointerdown', 70);
-  pointer('pointermove', 230);
-  assert.equal(el.shadowRoot.querySelector('ha-card').classList.contains('is-on'), false);
-  pointer('pointerup', 230);
-  button.click();
-  await el.updateComplete;
-  assert.deepEqual(calls, [['switch', 'turn_on', { entity_id: config.entity }]]);
-  calls.length = 0;
-  pointer('pointerdown', 70);
-  pointer('pointermove', 230);
-  pointer('pointercancel', 230);
+  button(el).dispatchEvent(new browser.KeyboardEvent('keydown', { key: ' ' }));
+  button(el).dispatchEvent(new Event('blur'));
+  button(el).dispatchEvent(new browser.KeyboardEvent('keyup', { key: ' ' }));
   assert.equal(calls.length, 0);
   el.remove();
 });
-
-test('pending scene stays truthful and a stale failure cannot affect a new entity', async () => {
-  const el = await card();
-  let reject;
-  el.hass = {
-    ...hass(),
-    callService: () =>
-      new Promise((_, fail) => {
-        reject = fail;
-      }),
-  };
-  await el.updateComplete;
-  el.shadowRoot.querySelector('button').click();
-  await el.updateComplete;
-  assert.match(el.shadowRoot.querySelector('[role="status"]').textContent, /Надсилання команди/);
-  assert.equal(el.shadowRoot.querySelector('button').getAttribute('aria-busy'), 'true');
-  assert.equal(el.shadowRoot.querySelector('ha-card').classList.contains('is-on'), false);
-  el.setConfig({ ...config, entity: 'switch.other' });
-  el.hass = { ...hass(), states: { 'switch.other': { state: 'on', attributes: {} } } };
-  reject(new Error('Old failure'));
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  await el.updateComplete;
-  assert.equal(el.shadowRoot.querySelector('[role="alert"]'), null);
-  assert.equal(el.shadowRoot.querySelector('button').disabled, false);
+test('spring preserves velocity, rotor coasts without resetting, cleanup and reduced motion', async () => {
+  const el = await card('pump', hass('off', 'on'));
+  window.cancelAnimationFrame(el.frame);
+  el.frame = undefined;
+  el.tick(100);
+  const initial = el.angle;
+  assert.ok(el.speed > 0);
+  el.hass = hass();
+  await flush(el);
+  window.cancelAnimationFrame(el.frame);
+  el.frame = undefined;
+  el.tick(116);
+  assert.ok(el.angle > initial);
+  assert.ok(el.speed > 0);
+  el.velocity = 0.1;
+  el.press(true);
+  assert.equal(el.velocity, 0.1);
+  el.setConfig({ entity: 'switch.light' });
+  assert.equal(el.frame, undefined);
+  assert.equal(el.speed, 0);
+  assert.equal(el.velocity, 0);
+  el.motion = { matches: true, removeEventListener() {} };
+  await flush(el);
+  el.motionChanged();
+  assert.equal(el.frame, undefined);
   el.remove();
+  assert.equal(el.timeout, undefined);
+  assert.equal(el.frame, undefined);
+});
+
+test('removal cancels a pending deadline and invalidates late rejection', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  let reject;
+  const el = await card(
+    'light',
+    hass(
+      'off',
+      'off',
+      () =>
+        new Promise((_, fail) => {
+          reject = fail;
+        }),
+    ),
+  );
+  button(el).click();
+  await flush(el);
+  el.remove();
+  assert.equal(el.timeout, undefined);
+  assert.equal(el.frame, undefined);
+  reject(new Error('late failure'));
+  t.mock.timers.tick(11000);
+  await flush(el);
+  document.body.append(el);
+  await flush(el);
+  assert.equal(button(el).getAttribute('aria-busy'), 'false');
+  assert.equal(el.shadowRoot.querySelector('[role=alert]'), null);
+  el.remove();
+  t.mock.timers.reset();
 });

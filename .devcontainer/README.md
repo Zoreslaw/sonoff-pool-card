@@ -12,8 +12,8 @@ npm start
 ```
 
 - Home Assistant: http://localhost:8123 (development user/password: dev/dev).
-- Card module: http://localhost:5000/sonoff-pool-card.js.
-- Main source: `src/sonoff-outdoor-light-card.ts`.
+- Card module: http://localhost:5000/dist/sonoff-pool-card.js.
+- Main source: `src/sonoff-pool-card.ts`.
 - Bundle: `dist/sonoff-pool-card.js`.
 - Container workspace: `/workspaces/sonoff-pool-card`.
 

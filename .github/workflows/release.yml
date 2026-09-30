@@ -36,7 +36,7 @@ jobs:
           if gh release view "$RELEASE_TAG" > /dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" dist/sonoff-pool-card.js --clobber
           else
-            gh release create "$RELEASE_TAG" dist/sonoff-pool-card.js --verify-tag --title "Sonoff Pool Card $RELEASE_TAG" --generate-notes --notes "Install or update through HACS as a custom Dashboard repository, or download sonoff-pool-card.js for manual installation. The card UI is in Ukrainian. See README for configuration."
+            gh release create "$RELEASE_TAG" dist/sonoff-pool-card.js --verify-tag --title "Sonoff Pool Cards $RELEASE_TAG" --notes-file CHANGELOG.md
           fi
       - name: Upload card bundle
         if: github.event_name == 'release'

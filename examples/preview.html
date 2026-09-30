@@ -1,104 +1,127 @@
 ﻿<!doctype html>
 <html lang="uk">
-  <meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>
-    Нічне подвір’я · перегляд картки
-  </title>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Басейн · дві картки</title>
   <style>
-    :root {
-      font-family: Arial, sans-serif;
-      color-scheme: dark;
-      --primary-text-color: #eef1ef;
-      --secondary-text-color: #a4b0b8;
-      --card-background-color: #1b2730;
-      --divider-color: #36434b;
-      --primary-color: #e7c98e;
-      --error-color: #ffb0a7;
+    * {
+      box-sizing: border-box;
     }
     body {
       margin: 0;
-      background: #101820;
-      color: #eef1ef;
-      padding: 40px;
+      font-family: system-ui, sans-serif;
+      background: #f2f6f5;
+      color: #283c41;
     }
     header {
-      margin-bottom: 30px;
+      padding: 32px 24px 16px;
     }
     h1 {
-      font-size: 28px;
+      font-size: 26px;
       font-weight: 500;
-      margin: 10px 0;
+      margin: 0 0 8px;
     }
     header p {
-      color: #a4b0b8;
-      font-size: 13px;
+      color: #667d81;
+      font-size: 14px;
     }
-    .eyebrow {
-      font-size: 10px;
-      letter-spacing: 3px;
-      color: #d5bc8d;
+    .theme {
+      padding: 24px;
+      --card-background-color: #fff;
+      --primary-text-color: #283c41;
+      --secondary-text-color: #647c81;
+      --secondary-background-color: #edf3f3;
+      --divider-color: #d5e1e1;
+      --primary-color: #268eaa;
+    }
+    .dark {
+      background: #111c22;
+      color: #e4edef;
+      --card-background-color: #1c2a32;
+      --primary-text-color: #e4edef;
+      --secondary-text-color: #9ab0b9;
+      --secondary-background-color: #273b45;
+      --divider-color: #3b505a;
+      --primary-color: #6bc9d3;
+      --error-color: #ffada3;
+    }
+    h2 {
+      font-size: 14px;
+      font-weight: 500;
+      margin: 0 0 20px;
     }
     .grid {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 22px;
-      max-width: 1800px;
+      gap: 20px;
+      max-width: 1600px;
+      margin: auto;
     }
     .label {
-      font-size: 10px;
-      letter-spacing: 2px;
-      color: #a4b0b8;
+      font-size: 11px;
+      letter-spacing: 1.3px;
       margin: 0 0 12px;
+      color: var(--secondary-text-color);
     }
-    @media (max-width: 1100px) {
+    @media (max-width: 1050px) {
       .grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
     @media (max-width: 600px) {
-      body {
-        padding: 20px 14px;
+      header {
+        padding: 24px 16px 8px;
+      }
+      .theme {
+        padding: 24px 16px;
       }
       .grid {
         grid-template-columns: minmax(0, 1fr);
       }
-      h1 {
-        font-size: 24px;
-      }
     }
   </style>
   <header>
-    <span class="eyebrow">SONOFF / ПОДВІР’Я</span>
-    <h1>Зустрічайте ніч із затишком.</h1>
-    <p>Живий перегляд карток · SVG-сцена · Керування освітленням</p>
+    <h1>Басейн. Світло й рух.</h1>
+    <p>Два незалежні канали · натисніть на світильник або насос</p>
   </header>
-  <main class="grid"></main>
+  <main></main>
   <script type="module">
     import '../dist/sonoff-pool-card.js';
-    for (const state of ['off', 'on', 'pending', 'unavailable']) {
+    const params = new URLSearchParams(location.search);
+    for (const theme of ['light', 'dark']) {
+      if (params.has('theme') && params.get('theme') !== theme) continue;
       const section = document.createElement('section');
-      section.innerHTML = `<p class="label">${{ off: 'ВИМКНЕНО', on: 'УВІМКНЕНО', pending: 'ОЧІКУВАННЯ', unavailable: 'НЕДОСТУПНО' }[state]}</p>`;
-      const card = document.createElement('sonoff-outdoor-light-card');
-      card.id = state;
-      card.setConfig({
-        type: 'custom:sonoff-outdoor-light-card',
-        entity: 'switch.garden_lights',
-        name: 'Освітлення саду',
-      });
-      const update = (next) => {
-        card.hass = {
-          states: { 'switch.garden_lights': { state: next, attributes: { friendly_name: 'Освітлення саду' } } },
-          callService: async (domain, service) => {
-            if (state === 'pending') return new Promise(() => {});
-            await new Promise((r) => setTimeout(r, 1000));
-            update(service === 'turn_on' ? 'on' : 'off');
-          },
-        };
-      };
-      update(state === 'pending' ? 'off' : state);
-      section.append(card);
+      section.className = `theme ${theme}`;
+      section.innerHTML = `<h2>${theme === 'light' ? 'Світла тема' : 'Темна тема'}</h2><div class="grid"></div>`;
       document.querySelector('main').append(section);
-      await card.updateComplete;
-      if (state === 'pending') card.shadowRoot.querySelector('button').click();
+      for (const kind of ['light', 'pump'])
+        for (const state of ['off', 'on', 'pending', 'unavailable']) {
+          if (params.has('state') && params.get('state') !== state) continue;
+          const tile = document.createElement('div');
+          tile.innerHTML = `<p class="label">${{ off: 'ВИМКНЕНО', on: 'УВІМКНЕНО', pending: 'ОЧІКУВАННЯ', unavailable: 'НЕДОСТУПНО' }[state]}</p>`;
+          const card = document.createElement(`sonoff-pool-${kind}-card`);
+          card.dataset.state = state;
+          card.dataset.kind = kind;
+          const entity = `switch.preview_${kind}`;
+          card.setConfig({ type: `custom:sonoff-pool-${kind}-card`, entity });
+          const update = (next) =>
+            (card.hass = {
+              states: { [entity]: { state: next, attributes: {} } },
+              callService: async (domain, service) => {
+                if (state === 'pending') return new Promise(() => {});
+                setTimeout(() => update(service === 'turn_on' ? 'on' : 'off'), 1100);
+              },
+            });
+          update(state === 'pending' ? 'off' : state);
+          tile.append(card);
+          section.querySelector('.grid').append(tile);
+          await card.updateComplete;
+          if (state === 'pending') {
+            const start = () => card.shadowRoot.querySelector('button').click();
+            start();
+            // Repeat the real bounded pending cycle for this demonstration tile.
+            setInterval(start, 11000);
+          }
+        }
     }
   </script>
 </html>

@@ -1,3 +1,10 @@
-type: custom:sonoff-outdoor-light-card
-entity: switch.example
-name: Outdoor lights
+﻿type: grid
+columns: 2
+square: false
+cards:
+  - type: custom:sonoff-pool-light-card
+    entity: switch.pool_light
+    name: Підсвітка басейну
+  - type: custom:sonoff-pool-pump-card
+    entity: switch.pool_pump
+    name: Циркуляційний насос

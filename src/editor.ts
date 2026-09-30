@@ -1,13 +1,12 @@
-import { LitElement, html, css } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
-import type { HomeAssistant, SonoffOutdoorLightCardConfig } from './types';
+﻿import { LitElement, html, css } from 'lit';
+import { property, state } from 'lit/decorators.js';
+import type { HomeAssistant, PoolCardConfig } from './types';
 
-@customElement('sonoff-outdoor-light-card-editor')
-export class SonoffOutdoorLightCardEditor extends LitElement {
+export class PoolCardEditor extends LitElement {
   @property({ attribute: false }) public hass?: HomeAssistant;
-  @state() private config?: SonoffOutdoorLightCardConfig;
+  @state() private config?: PoolCardConfig;
 
-  public setConfig(config: SonoffOutdoorLightCardConfig): void {
+  public setConfig(config: PoolCardConfig): void {
     this.config = { ...config };
   }
 
@@ -44,7 +43,7 @@ export class SonoffOutdoorLightCardEditor extends LitElement {
     this.updateConfig({ name: (event.target as HTMLInputElement).value });
   }
 
-  private updateConfig(change: Partial<SonoffOutdoorLightCardConfig>): void {
+  private updateConfig(change: Partial<PoolCardConfig>): void {
     if (!this.config) return;
     this.config = { ...this.config, ...change };
     if (!this.config.name) delete this.config.name;
@@ -78,3 +77,6 @@ export class SonoffOutdoorLightCardEditor extends LitElement {
     }
   `;
 }
+
+customElements.define('sonoff-pool-light-card-editor', class extends PoolCardEditor {});
+customElements.define('sonoff-pool-pump-card-editor', class extends PoolCardEditor {});
