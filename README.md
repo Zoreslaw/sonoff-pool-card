@@ -1,4 +1,4 @@
-﻿# Sonoff Pool Card
+# Sonoff Pool Card
 
 Two independent Home Assistant dashboard cards for the two switch channels of one pool relay. Each card controls exactly one configured entity. All default UI text and both visual editors are in Ukrainian.
 
@@ -28,14 +28,13 @@ Copy `dist/sonoff-pool-card.js` to `/config/www/sonoff-pool-card.js`, then add a
 
 If the dashboard resource was not added automatically, add `/hacsfiles/sonoff-pool-card/sonoff-pool-card.js` as a **JavaScript Module**. Use either the HACS resource or the manual `/local/` resource, not both.
 
-Version `0.2.2` includes both cards in the single asset `sonoff-pool-card.js`. See [release notes](CHANGELOG.md).
+Version `0.2.3` includes both cards in the single asset `sonoff-pool-card.js`. See [release notes](CHANGELOG.md).
 
 ![Both cards in all states and both themes](previews/desktop.png)
 
 ## Configuration
 
 Both cards use the full section width and 6 grid rows by default. Their containers fill the allocated height with a 376px minimum, including a non-shrinking status footer. Remove previously saved `grid_options` overrides to use these defaults; no new YAML parameters are required.
-
 
 Each card requires `entity`, a `switch.*` entity ID. `name` is optional and overrides the Ukrainian default title. Select a different relay channel for each card. There is no shared power control, brightness setting, or RGB setting.
 

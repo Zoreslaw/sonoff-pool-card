@@ -308,9 +308,17 @@ export class PoolCard extends LitElement {
       >
         ${this.drawing()}
       </button>
-      <p id="status" role=${this.error ? 'alert' : 'status'} aria-live="polite">
-        ${this.target ? html`<span class="spinner" aria-hidden="true"></span>` : ''}${message}
-      </p>
+      <div class="feedback">
+        <div class="feedback-size" aria-hidden="true">
+          <span>Не вдалося виконати команду. Спробуйте ще раз.</span>
+          <span>Немає підтвердження. Спробуйте ще раз.</span>
+          <span>Натисніть на світильник</span>
+          <span>Очікування Home Assistant…</span>
+        </div>
+        <p id="status" role=${this.error ? 'alert' : 'status'} aria-live="polite">
+          ${this.target ? html`<span class="spinner" aria-hidden="true"></span>` : ''}${message}
+        </p>
+      </div>
     </ha-card>`;
   }
   static styles = css`
@@ -466,8 +474,23 @@ export class PoolCard extends LitElement {
     .unavailable svg {
       opacity: 0.35;
     }
-    p {
+    .feedback {
+      display: grid;
       flex-shrink: 0;
+      width: 100%;
+    }
+    .feedback-size,
+    .feedback p,
+    .feedback-size span {
+      grid-area: 1 / 1;
+    }
+    .feedback-size {
+      display: grid;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .feedback-size,
+    p {
       max-width: 100%;
       overflow-wrap: anywhere;
       margin: 0;

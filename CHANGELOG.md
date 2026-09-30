@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.3
+
+- Reserve stable status-message space so pending, confirmation and error text cannot shift the illustration vertically.
+- Verify both cards across five widths and enlarged text: 80 browser layout checks pass.
+
 ## 0.2.2
 
 - Use full section width and six grid rows for both cards.

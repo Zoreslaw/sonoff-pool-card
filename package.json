@@ -1,7 +1,7 @@
 {
   "name": "sonoff-pool-card",
   "type": "module",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Two independent Home Assistant pool pump and lighting switch cards",
   "repository": {
     "type": "git",
