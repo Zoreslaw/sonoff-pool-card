@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.1
+
+- Redesign the lighting card as a rectangular pool viewed from the side, with a continuous basin outline and one waterline.
+- Center the underwater lamp on the visible wall and use a larger, clearly positioned control.
+- Replace hard-edged beams and decorative details with a soft underwater glow.
+- Correct the power icon geometry so it is centered in the pump hub and lamp.
+- Refresh all light/dark and desktop/mobile preview screenshots.
+- Keep existing entity configuration and service behavior unchanged.
+
+Validation: build and eight automated tests pass; browser checks cover all preview states, keyboard control and reduced motion. The pump icon's center was also verified using its SVG bounding box.
+
 ## 0.2.0
 
 - Replace the outdoor-light scaffold with two independent pool cards: `sonoff-pool-light-card` and `sonoff-pool-pump-card`.

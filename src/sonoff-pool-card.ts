@@ -229,17 +229,29 @@ export class PoolCard extends LitElement {
     }
   }
   private power() {
-    return svg`<path class="power" d="M140 108v16m-10-12a17 17 0 1 0 20 0"/>`;
+    return svg`<path class="power" d="M140 108v12M131.515 111.515a12 12 0 1 0 16.97 0"/>`;
   }
   private drawing() {
     return svg`<svg viewBox="0 0 280 240" aria-hidden="true">
       ${
         this.kind === 'light'
           ? svg`
-        <circle class="halo" cx="140" cy="120" r="101"/>
-        <circle class="wave" cx="140" cy="120" r="88"/>
-        <circle class="housing" cx="140" cy="120" r="83"/>
-        <g class="press-part"><circle class="diffuser" cx="140" cy="120" r="70"/>${this.power()}</g>
+        <defs>
+          <radialGradient id="pool-light-glow" cx="50%" cy="60%" r="60%">
+            <stop offset="0" stop-color="#9ef3e5" stop-opacity=".45"/>
+            <stop offset="1" stop-color="#64d5cd" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <path class="pool-water" d="M26 88Q83 82 140 88T254 88V180Q254 190 244 190H36Q26 190 26 180Z"/>
+        <path class="pool-glow" fill="url(#pool-light-glow)" d="M26 88Q83 82 140 88T254 88V180Q254 190 244 190H36Q26 190 26 180Z"/>
+        <path class="pool-surface" d="M26 88Q83 82 140 88T254 88"/>
+        <path class="pool-wall" d="M24 65V180Q24 192 36 192H244Q256 192 256 180V65"/>
+        <circle class="wave" cx="140" cy="140" r="31"/>
+        <circle class="housing" cx="140" cy="140" r="30"/>
+        <g class="press-part">
+          <circle class="diffuser" cx="140" cy="140" r="25"/>
+          <g transform="translate(0 20)">${this.power()}</g>
+        </g>
       `
           : svg`
         <path class="housing pipe" d="M16 104h51v32H16zM213 104h51v32h-51z"/>
@@ -374,16 +386,44 @@ export class PoolCard extends LitElement {
     .diffuser {
       transition: fill 0.25s;
     }
-    .halo {
-      fill: var(--accent);
-      opacity: 0;
-      transition: opacity 0.25s;
-    }
-    .is-on .halo {
-      opacity: 0.13;
-    }
     .light.is-on .diffuser {
       fill: #b8eee7;
+    }
+    .pool-water {
+      fill: var(--accent);
+      opacity: 0.08;
+      transition: opacity 0.3s;
+    }
+    .light.is-on .pool-water {
+      opacity: 0.13;
+    }
+    .pool-wall {
+      fill: none;
+      stroke: var(--secondary-text-color, #6a7f84);
+      stroke-width: 4;
+      stroke-linejoin: round;
+      stroke-linecap: round;
+      opacity: 0.65;
+    }
+    .pool-surface {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 1.5;
+      opacity: 0.5;
+    }
+    .pool-glow {
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .light.is-on .pool-glow {
+      opacity: 1;
+    }
+    .light .press-part,
+    .light .wave {
+      transform-origin: 140px 140px;
+    }
+    .light .housing {
+      stroke-width: 2;
     }
     .power {
       fill: none;

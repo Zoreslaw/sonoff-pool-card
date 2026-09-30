@@ -2,7 +2,7 @@
 
 Two independent Home Assistant dashboard cards for the two switch channels of one pool relay. Each card controls exactly one configured entity. All default UI text and both visual editors are in Ukrainian.
 
-- `custom:sonoff-pool-light-card`: an interactive underwater lamp, with a turquoise diffuser and one ripple on confirmed activation.
+- `custom:sonoff-pool-light-card`: a rectangular pool in side section, with a wall-mounted underwater lamp, waterline and light spreading through the water on confirmed activation.
 - `custom:sonoff-pool-pump-card`: an interactive pump, with a gently accelerating and decelerating impeller.
 
 Both are included in `sonoff-pool-card.js` and appear separately in the Home Assistant card picker. Their element and editor names are distinct from the original outdoor light card, so both projects can coexist.
@@ -28,7 +28,7 @@ Copy `dist/sonoff-pool-card.js` to `/config/www/sonoff-pool-card.js`, then add a
 
 If the dashboard resource was not added automatically, add `/hacsfiles/sonoff-pool-card/sonoff-pool-card.js` as a **JavaScript Module**. Use either the HACS resource or the manual `/local/` resource, not both.
 
-Release `v0.2.0` includes both cards in the single asset `sonoff-pool-card.js`. See [release notes](CHANGELOG.md).
+Version `0.2.1` includes both cards in the single asset `sonoff-pool-card.js`. See [release notes](CHANGELOG.md).
 
 ![Both cards in all states and both themes](previews/desktop.png)
 
