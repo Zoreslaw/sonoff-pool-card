@@ -52,10 +52,10 @@ export class PoolCard extends LitElement {
     this.angle = 0;
   }
   public getCardSize(): number {
-    return 4;
+    return 8;
   }
   public getGridOptions() {
-    return { columns: 6, rows: 4, min_columns: 3, min_rows: 4 };
+    return { columns: 'full' as const, rows: 6, min_rows: 6 };
   }
   public connectedCallback(): void {
     super.connectedCallback();
@@ -317,6 +317,7 @@ export class PoolCard extends LitElement {
     :host {
       display: block;
       min-width: 0;
+      height: 100%;
     }
     ha-card {
       --accent: #56bfb9;
@@ -325,7 +326,9 @@ export class PoolCard extends LitElement {
       align-items: center;
       box-sizing: border-box;
       padding: 24px 16px 20px;
-      height: 344px;
+      height: 100%;
+      min-height: 376px;
+      width: 100%;
       background: var(--ha-card-background, var(--card-background-color, #fff));
       color: var(--primary-text-color, #263b40);
       border: var(--ha-card-border-width, 1px) solid var(--ha-card-border-color, var(--divider-color, #dce5e5));
@@ -464,6 +467,9 @@ export class PoolCard extends LitElement {
       opacity: 0.35;
     }
     p {
+      flex-shrink: 0;
+      max-width: 100%;
+      overflow-wrap: anywhere;
       margin: 0;
       min-height: 20px;
       font: 400 13px/20px var(--ha-font-family, system-ui, sans-serif);

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.2
+
+- Use full section width and six grid rows for both cards.
+- Match container height to the allocated space and keep status hints visible above the next card.
+
 ## 0.2.1
 
 - Redesign the lighting card as a rectangular pool viewed from the side, with a continuous basin outline and one waterline.

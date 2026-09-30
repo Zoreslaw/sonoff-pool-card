@@ -41,6 +41,15 @@ async function card(kind = 'light', state = hass()) {
   return el;
 }
 const button = (el) => el.shadowRoot.querySelector('button');
+test('both cards reserve full section width and enough rows for the footer', async () => {
+  for (const kind of ['light', 'pump']) {
+    const el = await card(kind);
+    assert.deepEqual(el.getGridOptions(), { columns: 'full', rows: 6, min_rows: 6 });
+    assert.equal(el.getCardSize(), 8);
+    assert.match(el.shadowRoot.querySelector('#status').textContent, /Натисніть/);
+    el.remove();
+  }
+});
 const flush = async (el) => {
   await Promise.resolve();
   await el.updateComplete;
