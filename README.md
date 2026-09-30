@@ -2,12 +2,17 @@
 
 Initial project scaffold for one Home Assistant dashboard card controlling a pool pump and pool light through the two `switch` entities of the same Sonoff relay.
 
-## Relay entities
+## Planned entity configuration
 
-- Circulation pump: `switch.basein_sonoff_100102c164_1`
-- Pool light: `switch.basein_sonoff_100102c164_2`
+The future card will accept two `switch` entity IDs per card instance, through YAML or the visual editor. No device or entity ID will be hardcoded into the bundle. For the Home Assistant instance shown in the screenshots, the planned configuration would be:
 
-These are the entity IDs shown in Home Assistant. The future card should use Home Assistant's existing switch services for each channel. The planned configuration keys are `pump_entity` and `light_entity`; they are **not implemented yet**.
+```yaml
+type: custom:sonoff-pool-card
+pump_entity: switch.basein_sonoff_100102c164_1
+light_entity: switch.basein_sonoff_100102c164_2
+```
+
+In another Home Assistant instance, replace both values with that instance's switch entity IDs. The `pump_entity` and `light_entity` options and the new card type are **not implemented yet**; this is the intended configuration for the later card work.
 
 ## Current status
 
