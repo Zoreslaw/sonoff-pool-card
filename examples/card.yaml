@@ -1,0 +1,3 @@
+type: custom:sonoff-outdoor-light-card
+entity: switch.example
+name: Outdoor lights

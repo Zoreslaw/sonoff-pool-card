@@ -1,0 +1,46 @@
+name: Release
+on:
+  push:
+    tags:
+      - 'v*'
+  release:
+    types: [published]
+permissions:
+  contents: write
+concurrency:
+  group: release-${{ github.event.release.tag_name || github.ref_name }}
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Validate release version
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name || github.ref_name }}
+        run: |
+          node --input-type=module -e 'import fs from "node:fs"; const pkg = JSON.parse(fs.readFileSync("package.json", "utf8")); const lock = JSON.parse(fs.readFileSync("package-lock.json", "utf8")); if (process.env.RELEASE_TAG !== `v${pkg.version}`) throw new Error("Release tag must match package.json version"); if (lock.version !== pkg.version || lock.packages[""].version !== pkg.version) throw new Error("package-lock.json version must match package.json");'
+      - run: npm run build
+      - run: npm test
+      - name: Publish release with card bundle
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          if gh release view "$RELEASE_TAG" > /dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" dist/sonoff-pool-card.js --clobber
+          else
+            gh release create "$RELEASE_TAG" dist/sonoff-pool-card.js --verify-tag --title "Sonoff Pool Card $RELEASE_TAG" --generate-notes --notes "Install or update through HACS as a custom Dashboard repository, or download sonoff-pool-card.js for manual installation. The card UI is in Ukrainian. See README for configuration."
+          fi
+      - name: Upload card bundle
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$RELEASE_TAG" dist/sonoff-pool-card.js --clobber
